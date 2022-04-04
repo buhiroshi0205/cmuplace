@@ -1,0 +1,97 @@
+<html>
+  <head>
+    <script>
+      var readytime = 0;
+
+      function setStr(id, s) {
+        document.getElementById(id).innerHTML = s;
+      }
+
+      function appendStr(id, s) {
+        document.getElementById(id).innerHTML = document.getElementById(id).innerHTML.concat(s);
+      }
+
+      function getCookie(key) {
+        cookiearray = document.cookie.split(";");
+        // Now take key value pair out of this array
+        for(let i = 0; i < cookiearray.length; i++) {
+          name = cookiearray[i].split("=")[0].trim();
+          value = cookiearray[i].split("=")[1];
+          if (name === key) return value;
+        }
+        return null;
+      }
+
+      window.onload = function() {
+        testfunc();
+        var repeat = setInterval(testfunc, 5000);
+      }
+
+      function testfunc() {
+        if (getCookie("token") != null) {
+          setStr("c_status", "<a style=\"color:green;\">Online</a> <a href=\"/logout\">(logout)</a>");
+          if (readytime < Date.now()/1000) {
+            appendStr("c_status", " Ready to place tile");
+          } else {
+            cooldownstr = (readytime - Math.floor(Date.now()/1000)).toString();
+            appendStr("c_status", " Cooldown: "+cooldownstr+" seconds");
+          }
+        } else if (getCookie("refresh") != null) {
+          setStr("c_status", "<a style=\"color:yellow;\">Attempting automatic token refresh (shouldn't take more than 1 min)</a>");
+        } else {
+          setStr("c_status", "<a style=\"color:red;\">Unauthorized or authorization expired</a> <a href=\"/authorize\">(Authorize now!)</a>");
+        }
+
+        let infoxhr = new XMLHttpRequest();
+        infoxhr.onreadystatechange = function() {
+          if (this.readyState == 4) {
+            if (this.status == 200) {
+              setStr("s_status", "<p style=\"color:green\">Server online</p>");
+              setStr("s_logs", this.responseText);
+            } else {
+              setStr("s_status", "<p style=\"color:red\">Server offline, please contact Trollium</p>");
+            }
+          }
+        }
+        infoxhr.open("GET", "/info");
+        infoxhr.send();
+
+        if (getCookie("token") != null && readytime < Date.now()/1000) {
+          let readyxhr = new XMLHttpRequest();
+          readyxhr.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              if (this.responseText.length > 0) {
+                appendStr("c_logs", this.responseText.split('\n')[0]);
+                readytime = parseInt(this.responseText.split('\n')[1]);
+              }
+            }
+          }
+          readyxhr.open("GET", "/ready");
+          readyxhr.send();
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h1>CMU's r/place webbot</h1>
+    <h3>Don't refresh a lot; it's intentionally slow to prevent hitting reddit's limit.</h3>
+    <div style="float:left;width:50%;">
+      <h2>Client status</h2>
+      <div id="c_status"></div>
+      <div id="c_action"></div>
+      <div id="c_logs"></div>
+      <div>
+        Currently maintaining artworks:<br/>
+        {% for item in maintaining %}
+          <p>({{ item.x }}, {{ item.y }})</p>
+          <img src="/{{ item.path }}" width="100">
+        {% endfor %}
+      </div>
+    </div>
+    <div style="float:left;width:50%;">
+      <h2>Server status</h2>
+      <div id="s_status"></div>
+      <div id="s_logs"></div>
+    </div>
+  </body>
+</html>
