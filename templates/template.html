@@ -24,7 +24,7 @@
 
       window.onload = function() {
         testfunc();
-        var repeat = setInterval(testfunc, 5000);
+        var repeat = setInterval(testfunc, 10000);
       }
 
       function testfunc() {
@@ -37,7 +37,7 @@
             appendStr("c_status", " Cooldown: "+cooldownstr+" seconds");
           }
         } else if (getCookie("refresh") != null) {
-          setStr("c_status", "<a style=\"color:yellow;\">Attempting automatic token refresh (shouldn't take more than 1 min)</a>");
+          setStr("c_status", "<a style=\"color:orange;\">Attempting automatic token refresh (shouldn't take more than 1 min)</a>");
         } else {
           setStr("c_status", "<a style=\"color:red;\">Unauthorized or authorization expired</a> <a href=\"/authorize\">(Authorize now!)</a>");
         }
@@ -84,7 +84,7 @@
         Currently maintaining artworks:<br/>
         {% for item in maintaining %}
           <p>({{ item.x }}, {{ item.y }})</p>
-          <img src="/{{ item.path }}" width="100">
+          <img src="/{{ item.path }}" height="150">
         {% endfor %}
       </div>
     </div>

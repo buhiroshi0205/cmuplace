@@ -152,16 +152,16 @@ def info():
       new_token = (json_response['access_token'], json_response['expires_in'])
 
   # check for board accuracy
-  if time.time() - last_checked_board > 10 and 'token' in request.cookies:
-    refresh_fix_queue(request.cookies['token'])
+  if time.time() - last_checked_board > 5 and 'token' in request.cookies:
     last_checked_board = time.time()
+    refresh_fix_queue(request.cookies['token'])
 
   # log online users
   if 'username' in request.cookies and 'token' in request.cookies:
     online_users[request.cookies['username']] = time.time()
   need_deletion = []
   for k, v in online_users.items():
-    if time.time() - v > 20:
+    if time.time() - v > 60:
       need_deletion.append(k)
   for k in need_deletion:
     del online_users[k]
@@ -184,14 +184,15 @@ def ready():
   if len(fix_queue) == 0: return ''
 
   username = request.cookies['username']
-  x, y, color = fix_queue[-1]
-  del fix_queue[-1]
+  x, y, color = fix_queue[0]
+  del fix_queue[0]
   success, readytime = placetile(request.cookies['token'], x, y, color)
 
   if success:
     currtimestr = datetime.now().strftime('%H:%M:%S')
     newmessage = f'{currtimestr}: {username} placed {color} at ({x},{y})'
     messages.append(newmessage)
+    messages = messages[-30:]
     last_placed = time.time()
     return newmessage + '<br/>\n' + str(readytime)
   elif readytime != -1:
@@ -269,7 +270,7 @@ def get_board_img(bearer):
 
 def refresh_fix_queue(bearer):
   global fix_queue
-  fix_queue = []
+  fix_queue.clear()
   curr_board = np.array(get_board_img(bearer))
   for imgpath, idxpath in zip(sorted(glob.glob('static/*.png')), sorted(glob.glob('static/*.txt'))):
     need_fixes = []
@@ -286,7 +287,7 @@ def refresh_fix_queue(bearer):
           imgcol = get_closest_color(npimg[y][x][:3])
           if boardcol != imgcol:
             need_fixes.append((x+xstart, y+ystart, imgcol))
-    #random.shuffle(need_fixes)
+    random.shuffle(need_fixes)
     fix_queue.extend(need_fixes)
 
 
